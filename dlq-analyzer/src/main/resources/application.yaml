@@ -1,14 +1,14 @@
 spring:
   jackson:
-    time-zone: Asia/Kolkata
+    time-zone: ${TZ:Asia/Kolkata}
   application:
-    name: dlp-analyzer
+    name: ${APP_NAME:dlq-analyzer}
 
   # Database
   datasource:
-    url: jdbc:mysql://localhost:3306/dlqanalyzer?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:dlqanalyzer}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -23,35 +23,36 @@ spring:
 
   # RabbitMQ
   rabbitmq:
-    host: localhost
-    port: 5673
-    username: guest
-    password: guest
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5673}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 
   # Kafka
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     consumer:
-      group-id: dlq-analyzer
+      group-id: ${KAFKA_GROUP_ID:dlq-analyzer}
       auto-offset-reset: earliest
       enable-auto-commit: false
 
   # Redis
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
-# DLQ Config (Perfect!)
+# DLQ Config
 dlq:
   polling:
-    interval-ms: 30000
+    interval-ms: ${DLQ_POLLING_INTERVAL_MS:30000}
   rabbitmq:
-    dlq-patterns: .dlq,-dlq,.dead-letter
+    dlq-patterns: ${DLQ_PATTERNS:.dlq,-dlq,.dead-letter}
+    dlq-names: ${DLQ_NAMES:orders.dlq}
   kafka:
-    dlt-suffix: .DLT
+    dlt-suffix: ${DLQ_KAFKA_SUFFIX:.DLT}
   replay:
-    default-rate-per-minute: 100
+    default-rate-per-minute: ${DLQ_REPLAY_RATE_PER_MINUTE:100}
 
 server:
-  port: 8081
+  port: ${APP_PORT:8081}

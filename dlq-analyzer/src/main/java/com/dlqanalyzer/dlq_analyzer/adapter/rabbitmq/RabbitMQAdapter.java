@@ -12,10 +12,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -27,6 +24,9 @@ public class RabbitMQAdapter implements BrokerAdapter {
 
     @Value("${dlq.rabbitmq.dlq-patterns:.dlq,-dlq,.dead-letter}")
     private String dlqPatterns;
+
+    @Value("${dlq.rabbitmq.dlq-names:}")
+    private String dlqNames;
 
     @Override
     public List<DlqMessage> pollMessage(String destination, int limit) {
@@ -53,7 +53,10 @@ public class RabbitMQAdapter implements BrokerAdapter {
 
     @Override
     public List<String> listDlqDestinations() {
-        return List.of("orders.dlq");
+        if(dlqNames != null || !dlqNames.isEmpty()){
+            return Arrays.asList(dlqNames.split(","));
+        }
+        return List.of();
     }
 
     @Override

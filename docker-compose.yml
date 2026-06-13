@@ -1,0 +1,72 @@
+services:
+
+  dlq-analyzer-backend:
+    image: yashnikam18yn/dlq-analyzer-backend:latest
+    container_name: dlq-backend
+
+    ports: 
+      - "8082:8081"
+
+    environment:
+      DB_HOST: dlq-mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-dlqanalyzer}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-dlq-rabbitmq}
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      REDIS_HOST: dlq-redis
+      REDIS_PORT: 6379
+      DLQ_NAMES: ${DLQ_NAMES:-orders.dlq}
+      DLQ_PATTERNS: ${DLQ_PATTERNS:-.dlq,-dlq,.dead-letter}
+    
+    depends_on:
+      - dlq-mysql
+      - dlq-redis
+      - dlq-rabbitmq
+    
+    restart: unless-stopped
+
+  dlq-analyzer-frontend:
+    image: yashnikam18yn/dlq-analyzer-frontend:latest
+    container_name: dlq-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - dlq-analyzer-backend
+    restart: unless-stopped
+  
+  dlq-mysql:
+    image: mysql:8.0
+    container_name: dlq-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-dlqanalyzer}
+    ports:
+      - "3307:3306"
+    volumes:
+      - dlq_mysql_data:/var/lib/mysql
+    restart: unless-stopped
+  
+  dlq-redis:
+    image: redis:7
+    container_name: dlq-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+  
+  dlq-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dlq-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+
+volumes:
+  dlq_mysql_data:
