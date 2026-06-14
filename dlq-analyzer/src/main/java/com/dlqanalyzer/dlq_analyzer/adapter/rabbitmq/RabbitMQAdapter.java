@@ -1,4 +1,5 @@
 package com.dlqanalyzer.dlq_analyzer.adapter.rabbitmq;
+
 import com.dlqanalyzer.dlq_analyzer.model.BrokerType;
 import com.dlqanalyzer.dlq_analyzer.model.MessageStatus;
 import lombok.RequiredArgsConstructor;
@@ -9,10 +10,16 @@ import org.springframework.beans.factory.annotation.Value;
 import com.dlqanalyzer.dlq_analyzer.adapter.BrokerAdapter;
 import com.dlqanalyzer.dlq_analyzer.model.DlqMessage;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -27,6 +34,22 @@ public class RabbitMQAdapter implements BrokerAdapter {
 
     @Value("${dlq.rabbitmq.dlq-names:}")
     private String dlqNames;
+
+    // RabbitMQ Management REST API settings (used for auto-discovery)
+    @Value("${dlq.rabbitmq.management-url:http://localhost:15672}")
+    private String managementUrl;
+
+    @Value("${dlq.rabbitmq.management-vhost:/}")
+    private String managementVhost;
+
+    @Value("${spring.rabbitmq.username:guest}")
+    private String rabbitUser;
+
+    @Value("${spring.rabbitmq.password:guest}")
+    private String rabbitPassword;
+
+    // Built lazily so a momentary RabbitMQ outage at startup doesn't break the bean.
+    private RestClient managementClient;
 
     @Override
     public List<DlqMessage> pollMessage(String destination, int limit) {
@@ -51,12 +74,95 @@ public class RabbitMQAdapter implements BrokerAdapter {
         // This one we need later while we integrate the kafka
     }
 
+    /**
+     * Returns the list of DLQ destinations to poll.
+     *
+     * Order of precedence:
+     *   1. If dlq-names is explicitly set (non-empty), use that exact list (manual override).
+     *   2. Otherwise, auto-discover via the RabbitMQ Management API and keep only the
+     *      queues whose name matches one of the configured dlq-patterns (suffix match).
+     *
+     * Any failure during discovery is logged and an empty list is returned so the
+     * scheduled poller keeps running instead of crashing.
+     */
     @Override
     public List<String> listDlqDestinations() {
-        if(dlqNames != null || !dlqNames.isEmpty()){
-            return Arrays.asList(dlqNames.split(","));
+        // 1. Manual override (fixed the original ||/empty bug here).
+        if (dlqNames != null && !dlqNames.trim().isEmpty()) {
+            List<String> manual = Arrays.stream(dlqNames.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+            log.info("Using manually configured DLQ names: {}", manual);
+            return manual;
         }
-        return List.of();
+
+        // 2. Auto-discover from the management API.
+        try {
+            List<String> allQueues = fetchAllQueueNames();
+            List<String> patterns = Arrays.stream(dlqPatterns.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            List<String> discovered = allQueues.stream()
+                    .filter(name -> patterns.stream().anyMatch(name::endsWith))
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            log.info("Auto-discovered {} DLQ(s) matching {}: {}",
+                    discovered.size(), patterns, discovered);
+            return discovered;
+        } catch (Exception e) {
+            log.warn("DLQ auto-discovery failed ({}). Returning empty list; will retry next poll.",
+                    e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
+     * Calls GET {managementUrl}/api/queues/{vhost} and extracts the "name" of every queue.
+     * Uses HTTP basic auth with the same RabbitMQ credentials.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> fetchAllQueueNames() {
+        RestClient client = managementClient();
+
+        // Use the all-vhosts endpoint (/api/queues) instead of /api/queues/{vhost}.
+        // This avoids the RestClient double-encoding of the "%2F" vhost (which caused
+        // a 404 "Object Not Found"), and naturally discovers queues across every vhost.
+        // We then optionally filter by the configured vhost if one other than "/" is set.
+        List<Map<String, Object>> queues = client.get()
+                .uri("/api/queues")
+                .retrieve()
+                .body(List.class);
+
+        if (queues == null) {
+            return List.of();
+        }
+
+        return queues.stream()
+                // If a specific vhost is configured, keep only queues in that vhost.
+                .filter(q -> managementVhost == null
+                        || managementVhost.isEmpty()
+                        || managementVhost.equals(Objects.toString(q.get("vhost"), "/")))
+                .map(q -> Objects.toString(q.get("name"), null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private RestClient managementClient() {
+        if (managementClient == null) {
+            String basicAuth = Base64.getEncoder()
+                    .encodeToString((rabbitUser + ":" + rabbitPassword)
+                            .getBytes(StandardCharsets.UTF_8));
+            managementClient = RestClient.builder()
+                    .baseUrl(managementUrl)
+                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Basic " + basicAuth)
+                    .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                    .build();
+        }
+        return managementClient;
     }
 
     @Override

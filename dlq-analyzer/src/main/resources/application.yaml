@@ -48,7 +48,8 @@ dlq:
     interval-ms: ${DLQ_POLLING_INTERVAL_MS:30000}
   rabbitmq:
     dlq-patterns: ${DLQ_PATTERNS:.dlq,-dlq,.dead-letter}
-    dlq-names: ${DLQ_NAMES:orders.dlq}
+    dlq-names: ${DLQ_NAMES:}
+    management-url: ${RABBITMQ_MGMT_URL:http://localhost:15673}
   kafka:
     dlt-suffix: ${DLQ_KAFKA_SUFFIX:.DLT}
   replay:
