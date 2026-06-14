@@ -9,12 +9,12 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-    }
-  }
+    },
+  },
 })
 
 function AppInner() {
-  const { setLiveCount } = useDlqContext()
+  const { liveCount, setLiveCount } = useDlqContext()
 
   const handleWebSocketMessage = (msg: WebSocketMessage) => {
     if (msg.event === 'NEW_MESSAGES') {
@@ -32,20 +32,25 @@ function AppInner() {
   useWebSocket({ onMessage: handleWebSocketMessage })
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-
+    <div style={styles.app}>
       {/* Top bar */}
-      <div style={{
-        backgroundColor: '#ff6600',
-        color: '#fff',
-        padding: '10px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <strong style={{ fontSize: '18px' }}>DLQ Analyzer</strong>
-        <span style={{ fontSize: '13px' }}>● Live</span>
-      </div>
+      <header style={styles.topbar}>
+        <div style={styles.brandWrap}>
+          <span style={styles.brand}>DLQ Analyzer</span>
+          <span style={styles.tagline}>Dead-letter queue monitor</span>
+        </div>
+
+        <div style={styles.meta}>
+          <span style={styles.live}>
+            <span style={styles.dot} />
+            Live
+          </span>
+          <span style={styles.pending}>
+            Pending
+            <strong style={styles.pendingValue}>{liveCount ?? 0}</strong>
+          </span>
+        </div>
+      </header>
 
       <Dashboard />
     </div>
@@ -60,4 +65,69 @@ export default function App() {
       </DlqProvider>
     </QueryClientProvider>
   )
+}
+
+const MONO = 'ui-monospace, "SF Mono", "Roboto Mono", monospace'
+
+const styles: Record<string, React.CSSProperties> = {
+  app: {
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    minHeight: '100vh',
+    backgroundColor: '#eef0f2',
+  },
+  topbar: {
+    height: 48,
+    backgroundColor: '#2b3138',
+    color: '#fff',
+    padding: '0 18px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottom: '1px solid #1f242a',
+  },
+  brandWrap: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 10,
+    minWidth: 0,
+  },
+  brand: {
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+  },
+  tagline: {
+    fontSize: 12,
+    color: '#9aa4af',
+    whiteSpace: 'nowrap',
+  },
+  meta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    flexShrink: 0,
+  },
+  live: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 7,
+    fontSize: 13,
+    color: '#cfd5db',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    background: '#3ecf76',
+    boxShadow: '0 0 0 3px rgba(62,207,118,0.18)',
+  },
+  pending: {
+    fontSize: 13,
+    color: '#cfd5db',
+  },
+  pendingValue: {
+    fontFamily: MONO,
+    color: '#fff',
+    marginLeft: 6,
+  },
 }

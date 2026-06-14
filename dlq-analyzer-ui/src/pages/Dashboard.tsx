@@ -1,4 +1,5 @@
 import MetricsBar from '../components/dashboard/MetricsBar'
+import Charts from '../components/dashboard/Charts'
 import ErrorGroupList from '../components/dashboard/ErrorGroupList'
 import MessageDetail from '../components/dashboard/MessageDetail'
 
@@ -8,6 +9,9 @@ export default function Dashboard() {
 
       {/* Stats row */}
       <MetricsBar />
+
+      {/* Charts row */}
+      <Charts />
 
       {/* Main panels */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
