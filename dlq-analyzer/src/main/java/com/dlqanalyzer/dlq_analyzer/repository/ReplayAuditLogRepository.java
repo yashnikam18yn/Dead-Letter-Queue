@@ -7,5 +7,8 @@ import java.util.List;
 
 public interface ReplayAuditLogRepository extends JpaRepository<ReplayAuditLog, String> {
     List<ReplayAuditLog> findByBatchId(String batchId);
-    List<ReplayAuditLog> findByMessageId(String messageId);
+
+    // ReplayAuditLog has a related DlqMessage 'message', not a flat 'messageId'.
+    // The underscore tells Spring Data to traverse: message -> id.
+    List<ReplayAuditLog> findByMessage_Id(String messageId);
 }

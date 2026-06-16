@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useDlqContext, DlqProvider } from './context/DlqContext'
 import type { WebSocketMessage } from './types'
 import Dashboard from './pages/Dashboard'
+import Login from './components/Login'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +60,13 @@ function AppInner() {
 }
 
 export default function App() {
+  // Treat presence of stored credentials as "logged in" for this session.
+  const [authed, setAuthed] = useState(() => !!sessionStorage.getItem('dlqAuth'))
+
+  if (!authed) {
+    return <Login onSuccess={() => setAuthed(true)} />
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <DlqProvider>

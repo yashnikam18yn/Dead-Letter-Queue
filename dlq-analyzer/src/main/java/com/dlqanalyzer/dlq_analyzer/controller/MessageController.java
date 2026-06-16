@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/messages")
@@ -32,7 +31,7 @@ public class MessageController {
     }
 
     //GET message by status
-    @GetMapping("/satus/{status}")
+    @GetMapping("/status/{status}")
     public List<DlqMessage> getByStatus(@PathVariable MessageStatus status){
         return dlqMessageRepository.findByStatus(status);
     }

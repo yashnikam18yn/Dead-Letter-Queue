@@ -24,9 +24,11 @@ public class DlqIngestionService {
 
     private final WebSocketService webSocketService;
 
-    @Scheduled(fixedDelayString = "${dlp.polling.interval-ms:30000}")
+    @Scheduled(fixedDelayString = "${dlq.polling.interval-ms:30000}")
     public void poll(){
         log.info("DLQ polling Started...");
+        int newlySaved = 0;
+
         for(BrokerAdapter adapter: adapters){
             List<String> destinations = adapter.listDlqDestinations();
             for(String destination: destinations){
@@ -37,19 +39,23 @@ public class DlqIngestionService {
                             String groupKey = errorClassifier.classify(message);
                             message.setGroupKey(groupKey);
                             dlqMessageRepository.save(message);
+                            newlySaved++;
                             log.info("Saved new DLQ message from {}", destination);
                         }
-                        //after loop ends inform to the websocket
-                        long totalPending = dlqMessageRepository.findByStatus(
-                                MessageStatus.PENDING).size();
-                        webSocketService.notifyNewMessages(totalPending);
                     }
                 }catch (Exception e){
                     log.error("Error polling destination {}: {}", destination, e.getMessage());
                 }
             }
         }
-        log.info("DLQ polling completed.");
+
+        // Notify ONCE per poll cycle, and only if something actually changed.
+        if (newlySaved > 0) {
+            long totalPending = dlqMessageRepository.findByStatus(MessageStatus.PENDING).size();
+            webSocketService.notifyNewMessages(totalPending);
+        }
+
+        log.info("DLQ polling completed. {} new message(s) ingested.", newlySaved);
     }
 
 }

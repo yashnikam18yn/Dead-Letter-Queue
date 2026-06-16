@@ -3,10 +3,37 @@ import type { DlqMessage, ReplayAuditLog, ReplayResponse, Stats } from '../types
 
 const api = axios.create({
   baseURL: '/api/v1',
-  headers: {
-    Authorization: 'Basic ' + btoa('admin:admin')
-  }
 })
+
+// Attach Basic auth at runtime from stored credentials — never hardcoded in source.
+// Call setCredentials(user, pass) after the user logs in; it persists for the session.
+export const setCredentials = (username: string, password: string) => {
+  const token = btoa(`${username}:${password}`)
+  sessionStorage.setItem('dlqAuth', token)
+}
+
+export const clearCredentials = () => {
+  sessionStorage.removeItem('dlqAuth')
+}
+
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem('dlqAuth')
+  if (token) {
+    config.headers.Authorization = `Basic ${token}`
+  }
+  return config
+})
+
+// On 401, drop stale credentials so the app can re-prompt for login.
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearCredentials()
+    }
+    return Promise.reject(error)
+  }
+)
 
 // Stats
 export const fetchStats = async (): Promise<Stats> => {
