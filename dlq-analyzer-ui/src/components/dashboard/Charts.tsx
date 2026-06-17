@@ -127,7 +127,7 @@ export default function Charts() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   labelStyle={{ color: '#3a4047', fontWeight: 600 }}
-                  formatter={(v: number) => [`${v}`, 'failures']}
+                  formatter={(v) => [`${v}`, 'failures']}
                 />
                 <Area
                   type="monotone"
@@ -181,7 +181,7 @@ export default function Charts() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ fill: '#f4f5f7' }}
-                  formatter={(v: number) => [`${v}`, 'messages']}
+                  formatter={(v) => [`${v}`, 'messages']}
                 />
                 <Bar dataKey="count" radius={[0, 3, 3, 0]} maxBarSize={22}>
                   {breakdown.map((_, i) => (

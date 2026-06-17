@@ -1,7 +1,7 @@
 services:
 
   dlq-analyzer-backend:
-    image: yashnikam18yn/dlq-analyzer-backend:latest
+    build: ./dlq-analyzer
     container_name: dlq-backend
 
     ports: 
@@ -17,9 +17,10 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_MGMT_URL: http://dlq-rabbitmq:15672
       REDIS_HOST: dlq-redis
       REDIS_PORT: 6379
-      DLQ_NAMES: ${DLQ_NAMES:-orders.dlq}
+      DLQ_NAMES: ${DLQ_NAMES:-}
       DLQ_PATTERNS: ${DLQ_PATTERNS:-.dlq,-dlq,.dead-letter}
     
     depends_on:
@@ -30,7 +31,7 @@ services:
     restart: unless-stopped
 
   dlq-analyzer-frontend:
-    image: yashnikam18yn/dlq-analyzer-frontend:latest
+    build: ./dlq-analyzer-ui
     container_name: dlq-frontend
     ports:
       - "3000:80"
