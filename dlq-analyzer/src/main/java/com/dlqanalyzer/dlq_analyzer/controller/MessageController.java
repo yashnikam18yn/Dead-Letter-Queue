@@ -39,7 +39,6 @@ public class MessageController {
     }
 
     //discard/ delete message
-    //discard/ delete message
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> discard(@PathVariable String id){
         if (!dlqMessageRepository.existsById(id)) {

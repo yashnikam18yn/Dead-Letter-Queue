@@ -22,6 +22,10 @@ services:
       REDIS_PORT: 6379
       DLQ_NAMES: ${DLQ_NAMES:-}
       DLQ_PATTERNS: ${DLQ_PATTERNS:-.dlq,-dlq,.dead-letter}
+      DLQ_ADMIN_USER: ${DLQ_ADMIN_USER:-admin}
+      DLQ_ADMIN_PASSWORD: ${DLQ_ADMIN_PASSWORD:-change_me}
+      DLQ_VIEWER_USER: ${DLQ_VIEWER_USER:-viewer}
+      DLQ_VIEWER_PASSWORD: ${DLQ_VIEWER_PASSWORD:-change_me}
     
     depends_on:
       - dlq-mysql
