@@ -6,3 +6,6 @@
 **/.env
 !env.example
 !.env.example
+# Internal docs — not for the public repo
+DLQ-Analyzer-DISTRIBUTION-GUIDE.md
+DLQ-Analyzer-Internal-QA.docx
