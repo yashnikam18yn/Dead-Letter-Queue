@@ -19,7 +19,8 @@ public class ReplayController {
     private final ReplayAuditLogRepository replayAuditLogRepository;
 
     @PostMapping("/message/{id}")
-    public ResponseEntity<Map<String, String>> replayMessage(@PathVariable String id,@RequestParam(defaultValue = "orders") String targetDestination,
+    public ResponseEntity<Map<String, String>> replayMessage(@PathVariable String id,
+                                                             @RequestParam String targetDestination,
                                                              @RequestParam(defaultValue = "false") boolean dryRun){
         String batchId = replayEngine.replayMessage(id, targetDestination, dryRun, "admin");
         return ResponseEntity.ok(Map.of(
@@ -32,7 +33,7 @@ public class ReplayController {
     @PostMapping("/group/{groupKey}")
     public ResponseEntity<Map<String, String>> replayGroup(
             @PathVariable String groupKey,
-            @RequestParam(defaultValue = "orders") String targetDestination,
+            @RequestParam String targetDestination,
             @RequestParam(defaultValue = "false") boolean dryRun) {
 
         String batchId = replayEngine.replayGroup(groupKey, targetDestination, dryRun, "admin");

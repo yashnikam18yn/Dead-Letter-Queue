@@ -24,7 +24,7 @@ spring:
   # RabbitMQ
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5673}
+    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
 
@@ -60,8 +60,8 @@ server:
 
 security:
   admin:
-    username: ${ADMIN_USERNAME:admin}
-    password: ${ADMIN_PASSWORD:admin}
+    username: ${DLQ_ADMIN_USER:admin}
+    password: ${DLQ_ADMIN_PASSWORD:admin}
   viewer:
-    username: ${VIEWER_USERNAME:viewer}
-    password: ${VIEWER_PASSWORD:viewer123}
+    username: ${DLQ_VIEWER_USER:viewer}
+    password: ${DLQ_VIEWER_PASSWORD:viewer}

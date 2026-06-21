@@ -12,7 +12,7 @@ export const useWebSocket = ({ onMessage }: UseWebSocketProps) => {
 
   useEffect(() => {
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
+      webSocketFactory: () => new SockJS('/ws'),
       onConnect: () => {
         console.log('WebSocket connected')
 

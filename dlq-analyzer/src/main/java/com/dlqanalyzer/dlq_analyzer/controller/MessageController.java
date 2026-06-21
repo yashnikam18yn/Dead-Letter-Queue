@@ -6,6 +6,7 @@ import com.dlqanalyzer.dlq_analyzer.repository.DlqMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.dlqanalyzer.dlq_analyzer.service.ReplayEngine;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class MessageController {
 
     private final DlqMessageRepository dlqMessageRepository;
+    private final ReplayEngine replayEngine;
 
     //get all message
     @GetMapping
@@ -37,13 +39,14 @@ public class MessageController {
     }
 
     //discard/ delete message
+    //discard/ delete message
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> discard(@PathVariable String id){
-        return dlqMessageRepository.findById(id).map(msg -> {
-            msg.setStatus(MessageStatus.DISCARDED);
-            dlqMessageRepository.save(msg);
-            return ResponseEntity.ok().<Void>build();
-        }).orElse(ResponseEntity.notFound().build());
+        if (!dlqMessageRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        replayEngine.discardMessage(id, "admin");
+        return ResponseEntity.ok().build();
     }
 
 }
