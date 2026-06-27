@@ -4,8 +4,14 @@ services:
     build: ./dlq-analyzer
     container_name: dlq-backend
 
-    ports: 
+    ports:
       - "8082:8081"
+
+    # Lets the backend reach a RabbitMQ running on the host machine
+    # (set RABBITMQ_HOST=host.docker.internal in .env). Required on native
+    # Linux; harmless on Docker Desktop where the name already resolves.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     environment:
       DB_HOST: dlq-mysql
@@ -13,11 +19,15 @@ services:
       DB_NAME: ${DB_NAME:-dlqanalyzer}
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
+
+      # RabbitMQ to MONITOR. Defaults to the bundled demo broker below.
+      # Point at your own broker by setting these in .env.
       RABBITMQ_HOST: ${RABBITMQ_HOST:-dlq-rabbitmq}
-      RABBITMQ_PORT: 5672
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
-      RABBITMQ_MGMT_URL: http://dlq-rabbitmq:15672
+      RABBITMQ_MGMT_URL: ${RABBITMQ_MGMT_URL:-http://dlq-rabbitmq:15672}
+
       REDIS_HOST: dlq-redis
       REDIS_PORT: 6379
       DLQ_NAMES: ${DLQ_NAMES:-}
@@ -26,12 +36,11 @@ services:
       DLQ_ADMIN_PASSWORD: ${DLQ_ADMIN_PASSWORD:-change_me}
       DLQ_VIEWER_USER: ${DLQ_VIEWER_USER:-viewer}
       DLQ_VIEWER_PASSWORD: ${DLQ_VIEWER_PASSWORD:-change_me}
-    
+
     depends_on:
       - dlq-mysql
       - dlq-redis
-      - dlq-rabbitmq
-    
+
     restart: unless-stopped
 
   dlq-analyzer-frontend:
@@ -42,7 +51,7 @@ services:
     depends_on:
       - dlq-analyzer-backend
     restart: unless-stopped
-  
+
   dlq-mysql:
     image: mysql:8.0
     container_name: dlq-mysql
@@ -54,14 +63,18 @@ services:
     volumes:
       - dlq_mysql_data:/var/lib/mysql
     restart: unless-stopped
-  
+
   dlq-redis:
     image: redis:7
     container_name: dlq-redis
     ports:
       - "6379:6379"
     restart: unless-stopped
-  
+
+  # ── Bundled demo RabbitMQ ──────────────────────────────────────────
+  # On by default so the tool works with zero setup. If you are pointing
+  # the analyzer at your OWN RabbitMQ (via RABBITMQ_* in .env), you don't
+  # need this — stop it with:  docker compose stop dlq-rabbitmq
   dlq-rabbitmq:
     image: rabbitmq:3-management
     container_name: dlq-rabbitmq
