@@ -1,0 +1,31 @@
+# Test profile: no external infrastructure required.
+# Fixes DlqAnalyzerApplicationTests.contextLoads(), which referenced @ActiveProfiles("test")
+# without this file ever existing.
+spring:
+  datasource:
+    url: jdbc:h2:mem:dlqtest;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+  # Flyway migrations are MySQL-flavoured; let Hibernate build the H2 schema from entities instead.
+  flyway:
+    enabled: false
+
+# Turn the scheduled DLQ poller off so the context-load test does not try to reach RabbitMQ.
+dlq:
+  polling:
+    enabled: false
+
+# SecurityConfig reads these via @Value; provide them so the context can start.
+security:
+  admin:
+    username: admin
+    password: admin
+  viewer:
+    username: viewer
+    password: viewer
